@@ -44,9 +44,9 @@ function computeResults(limitMin, x)
   {
 //  sources.push({name:"id", src:"(letrec ((id (lambda (x) x))) (id 3) (id 4))"});
 //  sources.push({name:"rotate", src:read("test/resources/rotate.scm")});
-    sources.push({name:"fac", src:"(letrec ((fac (lambda (n) (if (= n 0) 1 (* n (fac (- n 1))))))) (fac 10))"});
+    sources.push({name:"fac", src:read("test/resources/fac.scm")});
     sources.push({name:"gcipd", src:read("test/resources/gcIpdExample.scm")});
-    sources.push({name:"fib", src:"(letrec ((fib (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))))) (fib 4))"});
+    sources.push({name:"fib", src:read("test/resources/fib.scm")});
     sources.push({name:"mj09", src:read("test/resources/mj09.scm")});
     sources.push({name:"eta", src:read("test/resources/eta.scm")});
     sources.push({name:"kcfa2", src:read("test/resources/kcfa2.scm")});    

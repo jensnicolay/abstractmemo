@@ -11,7 +11,8 @@ function b()
   load("setLattice.js");
   load("address.js");
   load("graph.js");
-  load("pushdown2.js");
+  load("pushdown.js");
+  load("dsg.js");
   load("typeLattice.js");
   load("monoTagAg.js");
   load("1cfaTagAg.js");

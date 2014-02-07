@@ -17,7 +17,8 @@
 	<script type="text/javascript" src="monoTagAg.js"></script>
 	<script type="text/javascript" src="1cfaTagAg.js"></script>
 	<script type="text/javascript" src="graph.js"></script>
-	<script type="text/javascript" src="pushdown2.js"></script>
+	<script type="text/javascript" src="pushdown.js"></script>
+	<script type="text/javascript" src="dsg.js"></script>
 	<script type="text/javascript" src="lcipda.js"></script>
 	<script type="text/javascript" src="lib/web/jquery-1.7.2.min.js"></script>
 	<script type="text/javascript" src="lib/web/ace/ace.js"></script>
@@ -33,7 +34,7 @@
 		$("#resultValue").empty();
 		$("#graph").empty();
 	  var src = editor.getSession().getValue();
-    var ast = new SchemeParser().parse(src);
+    ast = new SchemeParser().parse(src);
 /*     if (ast.length > 0)
     {
       ast = new Pair(new Sym("begin"), Pair.toList(ast));
@@ -60,6 +61,8 @@
     var meta = HashMap.empty();
 		var element = $("#graph");
 		graph = drawLinks(dsg.etg, dsg.ecg, meta, element, window);
+		states = graph.nodes;
+		edges = graph.edges;
 		var errorStates = graph.nodes.filter(function (q) {return q.type === "error"});
 		var errorString = errorStates.join("\n");
 		console.log(errorString);
@@ -71,6 +74,46 @@
 	  editor = ace.edit("editor");
 	  editor.getSession().setMode("ace/mode/scheme");
 	})
+	
+		function highlightState(q)
+	{
+	  var i = Arrays.indexOf(q, states, Eq.equals);
+	  $("g#"+i+ " ellipse").css("stroke", "red").css("stroke-width", "3px");
+	}
+	
+	function highlightEdge(e)
+	{
+	  var i = Arrays.indexOf(e, edges, Eq.equals);
+	  $("g#edge"+((i+1)*2) + " path").css("stroke", "red").css("stroke-width", "3px");
+	}
+	
+	function highlight(x)
+	{
+	  if (Array.isArray(x))
+	  {
+	    x.forEach(highlight);
+	  }
+	  if (!x)
+	  {
+	    return;
+	  }
+	  states.forEach(
+		  function (q) 
+		  {
+		    if (q.equals(x)) {highlightState(q)}
+		  })
+	  edges.forEach(
+		  function (e) 
+		  {
+		    if (e.equals(x)) {highlightEdge(e)}
+		  })
+	}
+	
+	function unhighlight()
+	{
+	  $("g ellipse").css("stroke", "black").css("stroke-width", "1px");
+	  $("g path").css("stroke", "black").css("stroke-width", "1px");
+	}
 	
 	</script>
 </head>
