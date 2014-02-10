@@ -147,7 +147,7 @@ function lcCesk(cc)
 //        return handleReturnValue(atomicValue, fun, extendedStore, extendedStore, kont);
 //      }
       extendedBenv.application = application;
-      var frame = new ReturnKont(application, fun, extendedBenv, extendedStore);
+      var frame = new ReturnKont(application, fun, extendedStore);
       return kont.push(frame, new EvalState(exp, extendedBenv, extendedStore));
     }
 
@@ -906,11 +906,10 @@ function lcCesk(cc)
       }));
   }
   
-  function ReturnKont(node, lam, extendedBenv, extendedStore)
+  function ReturnKont(node, lam, extendedStore)
   {
     this.node = node;
     this.lam = lam;
-    this.extendedBenv = extendedBenv;
     this.extendedStore = extendedStore;
   }
   ReturnKont.prototype.equals =
@@ -919,7 +918,6 @@ function lcCesk(cc)
       return x instanceof ReturnKont
         && Eq.equals(this.node, x.node)
         && Eq.equals(this.lam, x.lam)
-        && Eq.equals(this.extendedBenv, x.extendedBenv)
         && Eq.equals(this.extendedStore, x.extendedStore)
     }
   ReturnKont.prototype.hashCode =
@@ -929,7 +927,6 @@ function lcCesk(cc)
       var result = 1;
       result = prime * result + this.node.hashCode();
       result = prime * result + this.lam.hashCode();
-      result = prime * result + this.extendedBenv.hashCode();
       return result;
     }
   ReturnKont.prototype.toString =
@@ -945,8 +942,7 @@ function lcCesk(cc)
   ReturnKont.prototype.addresses =
     function ()
     {
-      return this.extendedBenv.addresses();
-//      return [];
+      return [];
     }
   ReturnKont.prototype.apply =
     function (returnValue, returnStore, kont)

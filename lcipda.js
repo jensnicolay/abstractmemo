@@ -15,7 +15,6 @@ function computeResult(src, cc)
   var time;
   try
   {
-    var sp = new SchemeParser();
     var cesk = lcCesk(cc);
     var driver = new Pushdown(cc.limitMs);
     var ast = new SchemeParser().parse(src)[0];
@@ -23,7 +22,7 @@ function computeResult(src, cc)
     var dsg = driver.analyze(ast, cesk);
     var numStates = dsg.etg.nodes().length;
     var numEdges = dsg.etg.edges().length;
-    var numMemoEdges = dsg.etg.edges().reduce(function (numMemoEdges, e) {return numMemoEdges + (e.marks === "MEMO" ? 1 : 0)}, 0);
+    var numMemoEdges = dsg.etg.edges().reduce(function (numMemoEdges, e) {return numMemoEdges + (String(e.marks).startsWith("MEMO") ? 1 : 0)}, 0);
     var time = dsg.time;
     print(cc.name, "time", time, "states", numStates, "edges", numEdges, "memoEdges", numMemoEdges);
     return {time:time, numStates:numStates, numEdges:numEdges, numMemoEdges:numMemoEdges};
@@ -42,13 +41,13 @@ function computeResults(limitMin, x)
   var sources = [];
   if (!x || x === 1)
   {
-//  sources.push({name:"id", src:"(letrec ((id (lambda (x) x))) (id 3) (id 4))"});
-//  sources.push({name:"rotate", src:read("test/resources/rotate.scm")});
+//    sources.push({name:"id", src:"(letrec ((id (lambda (x) x))) (id 3) (id 4))"});
     sources.push({name:"fac", src:read("test/resources/fac.scm")});
+//    sources.push({name:"rotate", src:read("test/resources/rotate.scm")});
     sources.push({name:"gcipd", src:read("test/resources/gcIpdExample.scm")});
     sources.push({name:"fib", src:read("test/resources/fib.scm")});
-    sources.push({name:"mj09", src:read("test/resources/mj09.scm")});
-    sources.push({name:"eta", src:read("test/resources/eta.scm")});
+//    sources.push({name:"mj09", src:read("test/resources/mj09.scm")});
+//    sources.push({name:"eta", src:read("test/resources/eta.scm")});
     sources.push({name:"kcfa2", src:read("test/resources/kcfa2.scm")});    
     sources.push({name:"blur", src:read("test/resources/blur.scm")});
   }

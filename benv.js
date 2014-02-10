@@ -138,3 +138,24 @@ Benv.prototype.addresses =
     var frameAddresses = this._map.values();
     return frameAddresses;
   }
+
+Benv.prototype.narrow =
+  function (names)
+  {
+    var result = this._map.clear();
+    var entries = this._map.entries();
+    for (var i = 0; i < entries.length; i++)
+    {
+      var entry = entries[i];
+      var name = entry.key;
+      if (Arrays.contains(name, names, Eq.equals))
+      {
+        result = result.put(name, entry.value);
+      }
+//        else // DEBUG
+//        {
+//          print("dropping", entry.key, entry.value);
+//        }
+    }
+    return new Benv(result);
+}
