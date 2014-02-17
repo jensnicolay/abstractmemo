@@ -2,7 +2,7 @@ var suiteLcipdaTests =
 
 (function () 
 {
-  var module = new TestSuite("suiteLcipdaTests");
+  var module = new TestSuite("suiteLcipdaConcTests");
 
   function run(src, cesk)
   {

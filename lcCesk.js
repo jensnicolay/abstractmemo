@@ -9,8 +9,7 @@ function lcCesk(cc)
   
   var gcFlag = cc.gc === undefined ? true : cc.gc;
   var memoFlag = cc.memo === undefined ? false : cc.memo;
-  var memoTable = HashMap.empty();
-  var fvTable = [];
+  var memoTable = MemoTable.empty();
   //TODO memotable size for in paper!
   
   assertDefinedNotNull(a);
@@ -19,23 +18,14 @@ function lcCesk(cc)
   // lattice (primitives + procs)
 //  var l = new JipdaLattice(p); // in this CESK, prims and procs don't match!
   
-  print("allocator", a);
-  print("lattice", l);
-  print("gc", gcFlag);
-  print("memoization", memoFlag);
+  print("alloc", a, "lat", l, "gc", gcFlag, "memo", memoFlag);
   
   // install constants
   var L_UNDEFINED = SetValue.from1(l.abst1(undefined));
-//  var L_NULL = SetValue.from1(l.abst1(null));
-//  var L_0 = SetValue.from1(l.abst1(0));
-//  var L_1 = SetValue.from1(l.abst1(1));
   var L_TRUE = SetValue.from1(l.abst1(true));
   var L_FALSE = SetValue.from1(l.abst1(false));
-  var L_NUMBER = SetValue.from1(l.NUMBER);
-//  var L_STRING = SetValue.from1(l.STRING);
   var L_BOOLEAN = L_TRUE.join(L_FALSE);
   
-
   function Closure(node, statc, params, body)
   {
     assertFalse(node == null);
@@ -86,6 +76,18 @@ function lcCesk(cc)
     {
 //      print("apply", application, operandValues);
       var fun = this.node;
+      
+      if (memoFlag)
+      {
+        var m = memoTable.get(fun, operandValues, callStore);
+        var memoStore = m[0];
+        var memoValue = m[1];
+        if (memoStore !== BOT)
+        {
+          return kont.pop(function (frame) {return new KontState(frame, memoValue, memoStore)}, "MEMO");
+        }
+      }
+
       var extendedBenv = this.statc.copy();
       var extendedStore = callStore;
       var params = this.params;
@@ -94,7 +96,6 @@ function lcCesk(cc)
       {
         if (operandValues[i] == null)
         {
-//          return kont.unch(new ErrorState("too few arguments", application, benv, callStore));
           return [];
         }
         var param = params.car;
@@ -105,37 +106,7 @@ function lcCesk(cc)
         params = params.cdr;
         i++;
       }
-      
-      if (memoFlag)
-      {
-//        if (gcFlag)
-//        {  
-//          extendedStore = Agc.collect(extendedStore, extendedBenv.addresses().concat(kont.ss.addresses()));
-//        }
-        var memoClosures = memoTable.get(fun.tag, ArraySet.empty()).values();
-//        print(this.node, "memoClosures", memoClosures);
-        var memoValue = BOT;
-        var memoStore = BOT;
-        for (var j = 0; j < memoClosures.length; j++)
-        {
-          var memoClosure = memoClosures[j];
-          var meStore = memoClosure[0];
-          var mSs = memoClosure[3];
-//            if (meStore.subsumes(extendedStore))
-          if (meStore.subsumes(extendedStore))
-          {
-            if (!mSs.subsumes(kont.ss))
-            {
-              continue;
-            }
-            var mrStore = memoClosure[1];
-            var mrValue = memoClosure[2];
-            var mrMeta = memoClosure[4];
-            return kont.pop(function (frame) {return new KontState(frame, mrValue, mrStore)}, "MEMO-" + mrMeta);
-          }
-        }
-      }
-      
+            
 //      if (!(this.body.cdr instanceof Null))
 //      {
 //        throw new Error("expected single body expression, got " + this.body);
@@ -147,7 +118,7 @@ function lcCesk(cc)
 //        return handleReturnValue(atomicValue, fun, extendedStore, extendedStore, kont);
 //      }
       extendedBenv.application = application;
-      var frame = new ReturnKont(application, fun, extendedBenv, extendedStore);
+      var frame = new ReturnKont(application, fun, operandValues, callStore);
       return kont.push(frame, new EvalState(exp, extendedBenv, extendedStore));
     }
 
@@ -452,7 +423,11 @@ function lcCesk(cc)
   installPrimitive("char?", 
       function(application, operandValues, benv, store, kont)
       {
-        return kont.pop(function (frame) {return new KontState(frame, L_BOOLEAN, store)});
+        var values = operandValues[0].values().flatMap(function (value)
+            {
+              return l.isChar(value);
+            })
+        return processErrors(values, application, benv, store, kont);
       });
   installPrimitive("symbol?", 
       function(application, operandValues, benv, store, kont)
@@ -466,33 +441,52 @@ function lcCesk(cc)
   installPrimitive("random", 
       function(application, operandValues, benv, store, kont)
       {
-        return kont.pop(function (frame) {return new KontState(frame, L_NUMBER, store)});
+        var values = l.random();
+        return processErrors(values, application, benv, store, kont);
       });
   installPrimitive("modulo", 
       function(application, operandValues, benv, store, kont)
       {
-        var values = operandValues[0].values().flatMap(function (value)
+        var values = operandValues[0].values()
+          .flatMap(
+            function (v1)
             {
-              return l.mod(value);
-            })
+              return operandValues[1].values().flatMap(
+                function (v2)
+                {
+                  return l.mod(v1, v2);
+                });
+            });
         return processErrors(values, application, benv, store, kont);
       });
   installPrimitive("remainder", 
       function(application, operandValues, benv, store, kont)
       {
-        var values = operandValues[0].values().flatMap(function (value)
+        var values = operandValues[0].values()
+          .flatMap(
+            function (v1)
             {
-              return l.mod(value);
-            })
+              return operandValues[1].values().flatMap(
+                function (v2)
+                {
+                  return l.mod(v1, v2); // wrong, but hey...
+                });
+            });
         return processErrors(values, application, benv, store, kont);
       });
   installPrimitive("quotient", 
       function(application, operandValues, benv, store, kont)
       {
-        var values = operandValues[0].values().flatMap(function (value)
-            {
-              return l.quot(value);
-            })
+        var values = operandValues[0].values()
+        .flatMap(
+          function (v1)
+          {
+            return operandValues[1].values().flatMap(
+              function (v2)
+              {
+                return l.quot(v1, v2);
+              });
+          });
         return processErrors(values, application, benv, store, kont);
       });
   installPrimitive("ceiling", 
@@ -516,10 +510,16 @@ function lcCesk(cc)
   installPrimitive("gcd", 
       function(application, operandValues, benv, store, kont)
       {
-        var values = operandValues[0].values().flatMap(function (value)
-            {
-              return l.gcd(value);
-            })
+        var values = operandValues[0].values()
+        .flatMap(
+          function (v1)
+          {
+            return operandValues[1].values().flatMap(
+              function (v2)
+              {
+                return l.gcd(v1, v2);
+              });
+          });
         return processErrors(values, application, benv, store, kont);
       });
   installPrimitive("even?", 
@@ -626,6 +626,7 @@ function lcCesk(cc)
     assertDefinedNotNull(node);
     this.node = node;
     this.benv = benv.narrow(freeVariables(node));
+//    this.benv = benv;
     this.store = store;
   }
   EvalState.prototype.toString =
@@ -906,12 +907,12 @@ function lcCesk(cc)
       }));
   }
   
-  function ReturnKont(node, lam, extendedBenv, extendedStore)
+  function ReturnKont(node, lam, operandValues, callStore)
   {
     this.node = node;
     this.lam = lam;
-    this.extendedBenv = extendedBenv;
-    this.extendedStore = extendedStore;
+    this.operandValues = operandValues;
+    this.callStore = callStore;
   }
   ReturnKont.prototype.equals =
     function (x)
@@ -919,8 +920,7 @@ function lcCesk(cc)
       return x instanceof ReturnKont
         && Eq.equals(this.node, x.node)
         && Eq.equals(this.lam, x.lam)
-        && Eq.equals(this.extendedBenv, x.extendedBenv)
-        && Eq.equals(this.extendedStore, x.extendedStore)
+        && Eq.equals(this.callStore, x.callStore)
     }
   ReturnKont.prototype.hashCode =
     function ()
@@ -929,7 +929,6 @@ function lcCesk(cc)
       var result = 1;
       result = prime * result + this.node.hashCode();
       result = prime * result + this.lam.hashCode();
-      result = prime * result + this.extendedBenv.hashCode();
       return result;
     }
   ReturnKont.prototype.toString =
@@ -945,19 +944,18 @@ function lcCesk(cc)
   ReturnKont.prototype.addresses =
     function ()
     {
-      return this.extendedBenv.addresses();
-//      return [];
+//      return this.extendedBenv.addresses();
+      return [];
     }
   ReturnKont.prototype.apply =
     function (returnValue, returnStore, kont)
     {
-      var lam = this.lam;
-      var extendedStore = this.extendedStore; 
       if (memoFlag)
       {
-        var memoKey = lam.tag;
-        memoTable = memoTable.put(memoKey, memoTable.get(memoKey, ArraySet.empty()).add([extendedStore, returnStore, returnValue, kont.ss, /*DEBUG*/kont.source.index]));
-//        print(this.closure.node, "memoized", returnValue);
+        var lam = this.lam;
+        var operandValues = this.operandValues;
+        var callStore = this.callStore; 
+        memoTable = memoTable.put(lam, operandValues, callStore, returnValue);
       }
       return kont.pop(function (frame) {return new KontState(frame, returnValue, returnStore)});
     }
@@ -1024,8 +1022,17 @@ function lcCesk(cc)
   
   function evalSet(node, benv, store, kont)
   {
+    var name = node.cdr.car.name;
     var exp = node.cdr.cdr.car;
+    var addr = benv.lookup(name); 
     var atomicValue =  evalAtomic(exp, benv, store);
+    store = store.updateAval(addr, atomicValue);
+    if (memoFlag)
+    {
+      var frames = kont.ss._frames.values();
+      var apps = frames.flatMap(function (frame) {return frame instanceof ReturnKont ? [frame.node] : []});
+      print(node, apps);
+    }
     return kont.pop(function (frame) {return new KontState(frame, L_UNDEFINED, store)});
   }
   
@@ -1230,7 +1237,7 @@ function lcCesk(cc)
       override = override || {};
       var benv = override.benv || global;
       var haltFrame = new HaltKont([]);
-      return {q:new InitState(node, benv, override.store || store, haltFrame), ss:StackSummary.empty()};
+      return {q:new InitState(node, benv, override.store || store, haltFrame), ss:FrameStackSummary.empty()};
     }
   
   return module; 
@@ -1369,57 +1376,4 @@ SetValue.prototype.toString =
   function ()
   {
     return this._set.toString();
-  }
-
-function StackSummary(addresses)
-{
-  this._addresses = addresses;
-}
-
-StackSummary.empty =
-  function ()
-  {
-    return new StackSummary(ArraySet.empty());
-  }
-
-StackSummary.prototype.toString =
-  function ()
-  {
-    return this._addresses.toString();
-  }
-
-StackSummary.prototype.equals =
-  function (x)
-  {
-    return (x instanceof StackSummary)
-      && this._addresses.equals(x._addresses)
-  }
-
-StackSummary.prototype.subsumes =
-  function (x)
-  {
-    return (x instanceof StackSummary)
-      && this._addresses.subsumes(x._addresses)
-  }
-
-StackSummary.prototype.hashCode =
-  function ()
-  {
-    var prime = 43;
-    var result = 1;
-    result = prime * result + this._addresses.hashCode();
-    return result;    
-  }
-
-StackSummary.prototype.push =
-  function (frame)
-  {
-    var addresses = this._addresses.addAll(frame.addresses());
-    return new StackSummary(addresses);
-  }
-
-StackSummary.prototype.addresses =
-  function ()
-  {
-    return this._addresses.values();
   }

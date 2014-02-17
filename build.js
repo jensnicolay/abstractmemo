@@ -6,9 +6,7 @@ function b()
   load("test.js");
   load("scheme.js");
   load("lattice.js");
-  load("lattice1.js");
-  load("cpLattice.js");
-  load("setLattice.js");
+  load("concLattice.js");
   load("address.js");
   load("graph.js");
   load("pushdown.js");
@@ -16,6 +14,9 @@ function b()
   load("typeLattice.js");
   load("monoTagAg.js");
   load("1cfaTagAg.js");
+  load("concAg.js");
+  load("frameSs.js");
+  load("memoTable.js");
   load("lcCesk.js");
   load("benv.js");
   load("lcipda.js");

@@ -223,8 +223,9 @@ function freeVariables(node)
   //        }
         if (name === "set!")
         {
+          var name = node.cdr.car.name;
           var exp = node.cdr.cdr.car;
-          return fv(exp, env);
+          return fv(exp, env).concat([name]);
         }
         if (name === "quote")
         {
