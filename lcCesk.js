@@ -10,7 +10,7 @@ function lcCesk(cc)
   var gcFlag = cc.gc === undefined ? true : cc.gc;
   var memoFlag = cc.memo === undefined ? false : cc.memo;
   var memoTable = MemoTable.empty();
-  //TODO memotable size for in paper!
+  var impureApps = ArraySet.empty();
   
   assertDefinedNotNull(a);
   assertDefinedNotNull(l);
@@ -953,10 +953,14 @@ function lcCesk(cc)
     {
       if (memoFlag)
       {
-        var lam = this.lam;
-        var operandValues = this.operandValues;
-        var callStore = this.callStore; 
-        memoTable = memoTable.put(lam, operandValues, callStore, returnValue);
+        var application = this.node;
+        if (!impureApps.contains(application))
+        {
+          var lam = this.lam;
+          var operandValues = this.operandValues;
+          var callStore = this.callStore; 
+          memoTable = memoTable.put(lam, operandValues, callStore, returnValue);
+        }
       }
       return kont.pop(function (frame) {return new KontState(frame, returnValue, returnStore)});
     }
@@ -1031,7 +1035,8 @@ function lcCesk(cc)
     if (memoFlag)
     {
       var apps = kont.ss._apps.values();
-      print(node, apps);
+      impureApps = impureApps.addAll(apps);
+      print(apps, "=> impure now", impureApps);
     }
     return kont.pop(function (frame) {return new KontState(frame, L_UNDEFINED, store)});
   }
