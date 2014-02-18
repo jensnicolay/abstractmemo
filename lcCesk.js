@@ -120,6 +120,7 @@ function lcCesk(cc)
       extendedBenv.application = application;
       var frame = new ReturnKont(application, fun, operandValues, callStore);
       return kont.push(frame, new EvalState(exp, extendedBenv, extendedStore));
+//      return kont.unch(new EvalState(exp, extendedBenv, extendedStore));
     }
 
   Closure.prototype.addresses =
@@ -1029,8 +1030,7 @@ function lcCesk(cc)
     store = store.updateAval(addr, atomicValue);
     if (memoFlag)
     {
-      var frames = kont.ss._frames.values();
-      var apps = frames.flatMap(function (frame) {return frame instanceof ReturnKont ? [frame.node] : []});
+      var apps = kont.ss._apps.values();
       print(node, apps);
     }
     return kont.pop(function (frame) {return new KontState(frame, L_UNDEFINED, store)});
@@ -1225,6 +1225,64 @@ function lcCesk(cc)
     }
     throw new Error("cannot handle node " + node); 
   }
+  
+  function RaAppStackSummary(addresses, apps)
+  {
+    this._addresses = addresses;
+    this._apps = apps;
+  }
+
+  RaAppStackSummary.empty =
+    function ()
+    {
+      return new RaAppStackSummary(ArraySet.empty(), ArraySet.empty());
+    }
+
+  RaAppStackSummary.prototype.toString =
+    function ()
+    {
+      return this._addresses + "[" + this._apps + "]";
+    }
+
+  RaAppStackSummary.prototype.equals =
+    function (x)
+    {
+      return (x instanceof RaAppStackSummary)
+        && this._addresses.equals(x._addresses)
+        && this._apps.equals(x._apps)
+    }
+
+  RaAppStackSummary.prototype.subsumes =
+    function (x)
+    {
+      return (x instanceof RaAppStackSummary)
+        && this._addresses.subsumes(x._addresses)
+        && this._apps.subsumes(x._apps)
+    }
+
+  RaAppStackSummary.prototype.hashCode =
+    function ()
+    {
+      var prime = 43;
+      var result = 1;
+      result = prime * result + this._addresses.hashCode();
+      result = prime * result + this._apps.hashCode();
+      return result;    
+    }
+
+  RaAppStackSummary.prototype.push =
+    function (frame)
+    {
+      var addresses = this._addresses.addAll(frame.addresses());
+      var apps = frame instanceof ReturnKont ? this._apps.add(frame.node) : this._apps;
+      return new RaAppStackSummary(addresses, apps);
+    }
+
+  RaAppStackSummary.prototype.addresses =
+    function ()
+    {
+      return this._addresses.values();
+    }
 
   var module = {};
   module.l = l;
@@ -1237,7 +1295,7 @@ function lcCesk(cc)
       override = override || {};
       var benv = override.benv || global;
       var haltFrame = new HaltKont([]);
-      return {q:new InitState(node, benv, override.store || store, haltFrame), ss:FrameStackSummary.empty()};
+      return {q:new InitState(node, benv, override.store || store, haltFrame), ss:RaAppStackSummary.empty()};
     }
   
   return module; 
