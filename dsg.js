@@ -294,53 +294,40 @@ Dsg.bwStack =
     return visited.values();
   }
 
-Dsg.prototype.stepFwOver =
-  function (c)
+Dsg.valuesOf =
+  function (etg, ecg)
   {
-    var successors = this.ecg.outgoing(c).flatMap(function (h) {return h.g ? [h.target] : []});
-    return successors;
+    return function (s)
+    {
+      var epsPreds = ecg.predecessors(s);
+      var pushPreds = epsPreds.flatMap(function (s) {return Dsg.pushPredecessors(s, etg)});
+      var stepOvers = pushPreds.flatMap(Dsg.stepFwOver(ecg));
+      return stepOvers;
+    }
   }
+
+Dsg.stepFwOver =
+  function (ecg)
+  {
+    return function (s)
+    {
+      var successors = ecg.outgoing(s).flatMap(function (h) {return h.g ? [h.target] : []});
+      return successors;
+    }
+  }
+
+Dsg.prototype.stepFwOver =
+  function (s)
+  {
+    return Dsg.stepFwOver(this.ecg)(s);
+  }
+
 
 Dsg.prototype.stepBwOver =
   function (s)
   {
     var predecessors = this.ecg.incoming(s).flatMap(function (h) {return h.g ? [h.source] : []});
     return predecessors;
-  }
-
-Dsg.prototype.popValues = 
-  function (s)
-  {
-    var targets = ArraySet.empty();
-    var visited = ArraySet.empty();
-    var todo = [s];
-    while (todo.length > 0)
-    {
-      var c = todo.shift();
-      if (visited.contains(c))
-      {
-        continue;
-      }
-      visited = visited.add(c);
-      if (c.q.value)
-      {
-        targets = targets.add(c);
-        continue;
-      }
-      todo = todo.concat(Dsg.epsPopSuccessors(c, this.etg, this.ecg));
-    }
-    return targets.values();
-  }
-
-Dsg.prototype.valueOf =
-  function (s)
-  {
-    var etg = this.etg;
-    var ecg = this.ecg;
-    var q2s = Dsg.epsPredecessors(s, ecg);
-    var qs = q2s.flatMap(function (q2) {return Dsg.pushPredecessors(q2, etg)});
-    var q1s = qs.flatMap(function (q) {return this.stepFwOver(q)}, this);
-    return q1s.flatMap(function (q1) {return this.popValues(q1)}, this);
   }
 
 Dsg.prototype.topOfStack =

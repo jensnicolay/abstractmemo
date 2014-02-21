@@ -102,11 +102,13 @@ Unch.prototype.toString =
 var ceskDriver = {};
 
 ceskDriver.PushUnchKont =
-  function(source, ss)
-{
-  this.source = source;
-  this.ss = ss;
-}
+  function(source, ss, etg, ecg)
+  {
+    this.source = source;
+    this.ss = ss;
+    this.etg = etg;
+    this.ecg = ecg;
+  }
 
 ceskDriver.PushUnchKont.prototype.push =
   function (frame, target, marks)
@@ -127,11 +129,13 @@ ceskDriver.PushUnchKont.prototype.unch =
   }
 
 ceskDriver.PopKont =
-  function (source, frame, ss)
+  function (source, frame, ss, etg, ecg)
 {
   this.source = source;
   this.frame = frame;
   this.ss = ss;
+  this.etg = etg;
+  this.ecg = ecg;
 }
 
 ceskDriver.PopKont.prototype.push =
@@ -155,16 +159,16 @@ ceskDriver.PopKont.prototype.unch =
   }
 
 ceskDriver.pushUnch =
-  function (c)
+  function (c, etg, ecg)
   {
-    var kont = new ceskDriver.PushUnchKont(c, c.ss);
+    var kont = new ceskDriver.PushUnchKont(c, c.ss, etg, ecg);
     return c.q.next(kont);
   }
 
 ceskDriver.pop =
-  function (c, frame)
+  function (c, frame, etg, ecg)
   {
-    var kont = new ceskDriver.PopKont(c, frame, c.ss);
+    var kont = new ceskDriver.PopKont(c, frame, c.ss, etg, ecg);
     return c.q.next(kont);
   }
 
@@ -270,7 +274,7 @@ Pushdown.run =
           var ss1 = c.ss.push(e.g.frame);
           var c1 = newC(q1, ss1);
           ecg = ecg.addEdge(new Edge(c1, null, c1));
-          var dd = Pushdown.addPush(c, g.frame, c1, ecg, ceskDriver);
+          var dd = Pushdown.addPush(c, g.frame, c1, etg, ecg, ceskDriver);
           dE = dE.concat(dd[0]);
           dH = dH.concat(dd[1]);
           var e1 = new Edge(c, g, c1, e.marks);
@@ -349,13 +353,13 @@ Pushdown.run =
   }
 
 Pushdown.addPush =
-  function (c, frame, c1, ecg, ceskDriver)
+  function (c, frame, c1, etg, ecg, ceskDriver)
   { 
     var cset2 = ecg.successors(c1);
     var popEdges = cset2.flatMap(
         function (c2)
         {
-          var popEdges = ceskDriver.pop(c2, frame);
+          var popEdges = ceskDriver.pop(c2, frame, etg, ecg);
           return popEdges;
         });
     var ddH = popEdges.map(function (popEdge) {return new Edge(c, new Unch(frame), popEdge.target)});
@@ -409,7 +413,7 @@ Pushdown.addEmpty =
           function (pushEdge)
           {
             var frame = pushEdge.g.frame;
-            var popEdges = ceskDriver.pop(c4, frame);
+            var popEdges = ceskDriver.pop(c4, frame, etg, ecg);
             return popEdges;
           })
       });

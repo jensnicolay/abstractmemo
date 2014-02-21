@@ -9,8 +9,8 @@ function lcCesk(cc)
   
   var gcFlag = cc.gc === undefined ? true : cc.gc;
   var memoFlag = cc.memo === undefined ? false : cc.memo;
-  var memoTable = MemoTable.empty();
   var impureApps = ArraySet.empty();
+  var appTable = AppTable.empty();
   
   assertDefinedNotNull(a);
   assertDefinedNotNull(l);
@@ -72,24 +72,45 @@ function lcCesk(cc)
     }
   
   Closure.prototype.apply_ =
-    function (application, operandValues, benv, callStore, kont)
+    function (application, operandValues, benv, store, kont)
     {
 //      print("apply", application, operandValues);
       var fun = this.node;
       
-      if (memoFlag)
+      if (memoFlag) // TODO test whether only PushUnch needs to provide etg/ecg
       {
-        var m = memoTable.get(fun, operandValues, callStore);
-        var memoStore = m[0];
-        var memoValue = m[1];
-        if (memoStore !== BOT)
+        var appStates = appTable.get(fun, operandValues);
+        var mValue = BOT;
+        var mStore = BOT;
+        for (var i = 0; i < appStates.length; i++)
         {
-          return kont.pop(function (frame) {return new KontState(frame, memoValue, memoStore)}, "MEMO");
+          var s = appStates[i];
+          var appStore = s.q.store;
+          if (!appStore.subsumes(store))
+          {
+            continue;
+          }
+          var valueStates = Dsg.valuesOf(kont.etg, kont.ecg)(s);
+          var appValue = valueStates.map(function (s) {return s.q.value || BOT}).reduce(Lattice.join, BOT);
+          if (appValue !== BOT)
+          {
+            mValue = mValue.join(appValue);
+            mStore = mStore.join(appStore);
+            break; // "return first" strategy 
+          }
+        }
+        if (mStore !== BOT)
+        {
+          return kont.pop(function (frame) {return new KontState(frame, mValue, mStore)}, "MEMO");
+        }
+        else
+        {
+          appTable = appTable.put(fun, operandValues, kont.source);
         }
       }
 
       var extendedBenv = this.statc.copy();
-      var extendedStore = callStore;
+      var extendedStore = store;
       var params = this.params;
       var i = 0;
       while (!(params instanceof Null))
@@ -118,7 +139,7 @@ function lcCesk(cc)
 //        return handleReturnValue(atomicValue, fun, extendedStore, extendedStore, kont);
 //      }
       extendedBenv.application = application;
-      var frame = new ReturnKont(application, fun, operandValues, callStore);
+      var frame = new ReturnKont(application); // TODO: could also mark this with (lam, rands)?
       return kont.push(frame, new EvalState(exp, extendedBenv, extendedStore));
 //      return kont.unch(new EvalState(exp, extendedBenv, extendedStore));
     }
@@ -660,7 +681,13 @@ function lcCesk(cc)
   EvalState.prototype.next =
     function (kont)
     {
-      return evalNode(this.node, this.benv, gc(this, kont), kont);
+      try {
+        return evalNode(this.node, this.benv, gc(this, kont), kont);
+    } catch (e)
+    {
+      print(e.stack);
+      return kont.unch(new ErrorState(String(e), this.node, Benv.empty(), this.store));
+    }
     }
   EvalState.prototype.addresses =
     function ()
@@ -705,12 +732,13 @@ function lcCesk(cc)
   KontState.prototype.next =
     function (kont)
     {
-//    try {
+    try {
       return applyKont(this.frame, this.value, gc(this, kont), kont)
-//    } catch (e)
-//    {
-//      return kont.unch(new ErrorState(String(e), this.value, Benv.empty(), this.store));
-//    }
+    } catch (e)
+    {
+      print(e.stack);
+      return kont.unch(new ErrorState(String(e), this.value, Benv.empty(), this.store));
+    }
     }
   KontState.prototype.addresses =
     function ()
@@ -908,20 +936,15 @@ function lcCesk(cc)
       }));
   }
   
-  function ReturnKont(node, lam, operandValues, callStore)
+  function ReturnKont(node)
   {
-    this.node = node;
-    this.lam = lam;
-    this.operandValues = operandValues;
-    this.callStore = callStore;
+    this.node = node; // application 
   }
   ReturnKont.prototype.equals =
     function (x)
     {
       return x instanceof ReturnKont
         && Eq.equals(this.node, x.node)
-        && Eq.equals(this.lam, x.lam)
-        && Eq.equals(this.callStore, x.callStore)
     }
   ReturnKont.prototype.hashCode =
     function ()
@@ -929,7 +952,6 @@ function lcCesk(cc)
       var prime = 7;
       var result = 1;
       result = prime * result + this.node.hashCode();
-      result = prime * result + this.lam.hashCode();
       return result;
     }
   ReturnKont.prototype.toString =
@@ -945,24 +967,13 @@ function lcCesk(cc)
   ReturnKont.prototype.addresses =
     function ()
     {
-//      return this.extendedBenv.addresses();
       return [];
     }
   ReturnKont.prototype.apply =
-    function (returnValue, returnStore, kont)
+    function (value, store, kont)
     {
-      if (memoFlag)
-      {
-        var application = this.node;
-        if (!impureApps.contains(application))
-        {
-          var lam = this.lam;
-          var operandValues = this.operandValues;
-          var callStore = this.callStore; 
-          memoTable = memoTable.put(lam, operandValues, callStore, returnValue);
-        }
-      }
-      return kont.pop(function (frame) {return new KontState(frame, returnValue, returnStore)});
+      // this is a marker frame, so just pops itself
+      return kont.pop(function (frame) {return new KontState(frame, value, store)});
     }
   
   function evalLiteral(node, benv, store)
@@ -1439,4 +1450,43 @@ SetValue.prototype.toString =
   function ()
   {
     return this._set.toString();
+  }
+
+function AppTable(map)
+{
+  this._map = map;
+}
+
+AppTable.empty =
+  function ()
+  {
+    return new AppTable(HashMap.empty());
+  }
+
+AppTable.prototype.put =
+  function (lam, rands, s) // TODO: store in or out of AppTable?
+  {
+    var map = this._map.put(lam.tag, this._map.get(lam.tag, ArraySet.empty()).add([rands, s]));
+    return new AppTable(map);
+  }
+
+AppTable.prototype.get =
+  function (lam, rands)
+  {
+    var entries = this._map.get(lam.tag, ArraySet.empty()).values();
+    var result = [];
+    outer: for (var j = 0; j < entries.length; j++)
+    {
+      var entry = entries[j];
+      var mRands = entry[0];
+      for (var k = 0; k < mRands.length; k++)
+      {
+        if (!mRands[k].subsumes(rands[k]))
+        {
+          continue outer; 
+        }
+      }
+      result.push(entry[1]);
+    }
+    return result;
   }

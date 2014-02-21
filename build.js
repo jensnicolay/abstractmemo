@@ -15,8 +15,6 @@ function b()
   load("monoTagAg.js");
   load("1cfaTagAg.js");
   load("concAg.js");
-  load("frameSs.js");
-  load("memoTable.js");
   load("lcCesk.js");
   load("benv.js");
   load("lcipda.js");
