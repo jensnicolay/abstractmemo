@@ -15,7 +15,7 @@ function computeResult(src, cc)
   var time;
   try
   {
-    var cesk = lcCesk(cc);
+    var cesk = amemoCesk(cc);
     var driver = new Pushdown(cc.limitMs);
     var ast = new SchemeParser().parse(src)[0];
     var start = Date.now();
@@ -165,7 +165,7 @@ function repl(cc)
   cc = cc || {};
   var sp = new SchemeParser();
   var name = cc.name || "lcipda";
-  var cesk = lcCesk({a:cc.a || createMonoTagAg(), l:cc.l || new Lattice1()});
+  var cesk = cesk({a:cc.a || createMonoTagAg(), l:cc.l || new Lattice1()});
   var src = "\"I am " + name + "\"";
   var store = cesk.store;
   var driver = new Pushdown();

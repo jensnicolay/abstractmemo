@@ -1,8 +1,8 @@
-var suiteLcipdaTests = 
+var suiteCeskTests = 
 
 (function () 
 {
-  var module = new TestSuite("suiteLcipdaTests");
+  var module = new TestSuite("suiteCeskTests");
 
   function run(src, cesk)
   {
@@ -15,7 +15,7 @@ var suiteLcipdaTests =
   function createCesk(cc)
   {
     cc = cc || {};
-    return lcCesk({a:cc.a || create1cfaTagAg(), l:cc.l || new TypeLattice()});
+    return amemoCesk({a:cc.a || create1cfaTagAg(), l:cc.l || new TypeLattice()});
   }
   
   module.test1a =

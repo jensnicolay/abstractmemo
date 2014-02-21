@@ -1,4 +1,4 @@
-function lcCesk(cc)
+function amemoCesk(cc)
 {
   // address generator
   var a = cc.a;

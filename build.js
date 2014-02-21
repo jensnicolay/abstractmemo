@@ -15,11 +15,11 @@ function b()
   load("monoTagAg.js");
   load("1cfaTagAg.js");
   load("concAg.js");
-  load("lcCesk.js");
+  load("cesk.js");
   load("benv.js");
-  load("lcipda.js");
+  load("amemo.js");
 
-  load("test/lcipdaTests.js");
+  load("test/ceskTests.js");
 }
 
 b();

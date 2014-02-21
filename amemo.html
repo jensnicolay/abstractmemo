@@ -2,7 +2,7 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<link rel="stylesheet" href="lcipda.css" type="text/css" media="all"/> 
+	<link rel="stylesheet" href="amemo.css" type="text/css" media="all"/> 
 	<title>LCIPDA</title>
 	<script type="text/javascript" src="common.js"></script>
 	<script type="text/javascript" src="agc.js"></script>
@@ -12,13 +12,13 @@
 	<script type="text/javascript" src="store.js"></script>
 	<script type="text/javascript" src="typeLattice.js"></script>
 	<script type="text/javascript" src="benv.js"></script>
-	<script type="text/javascript" src="lcCesk.js"></script>
+	<script type="text/javascript" src="cesk.js"></script>
 	<script type="text/javascript" src="monoTagAg.js"></script>
 	<script type="text/javascript" src="1cfaTagAg.js"></script>
 	<script type="text/javascript" src="graph.js"></script>
 	<script type="text/javascript" src="pushdown.js"></script>
 	<script type="text/javascript" src="dsg.js"></script>
-	<script type="text/javascript" src="lcipda.js"></script>
+	<script type="text/javascript" src="amemo.js"></script>
 	<script type="text/javascript" src="lib/web/jquery-1.7.2.min.js"></script>
 	<script type="text/javascript" src="lib/web/ace/ace.js"></script>
 	<script type="text/javascript" src="lib/web/viz.js"></script>
@@ -47,7 +47,7 @@
     var gc = $("#gc").prop("checked");
     var memo = $("#memo").prop("checked");
     var l = eval($("#lattice").val());
-    var cesk = lcCesk({a:ag, l:l, gc:gc, memo:memo});
+    var cesk = amemoCesk({a:ag, l:l, gc:gc, memo:memo});
     var driver = new Pushdown();
     var start = Date.now();
 		dsg = driver.analyze(ast, cesk);
