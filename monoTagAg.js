@@ -6,7 +6,7 @@ function createMonoTagAg()
   a.variable =
     function (node, time)
     {
-      return new MonoAddr(node);
+      return new MonoAddr(node.tag);
     }
   
   return a;

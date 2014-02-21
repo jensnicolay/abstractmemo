@@ -77,14 +77,19 @@ function amemoCesk(cc)
 //      print("apply", application, operandValues);
       var fun = this.node;
       
-      if (memoFlag) // TODO test whether only PushUnch needs to provide etg/ecg
+      if (memoFlag)
       {
         var appStates = appTable.get(fun, operandValues);
         var mValue = BOT;
         var mStore = BOT;
+        var currentState = kont.source;
         for (var i = 0; i < appStates.length; i++)
         {
           var s = appStates[i];
+          if (s === currentState)
+          {
+            continue;
+          }
           var appStore = s.q.store;
           if (!appStore.subsumes(store))
           {
@@ -96,7 +101,7 @@ function amemoCesk(cc)
           {
             mValue = mValue.join(appValue);
             mStore = mStore.join(appStore);
-            break; // "return first" strategy 
+            // break; // if "return first" strategy then break; else continue
           }
         }
         if (mStore !== BOT)
@@ -681,13 +686,13 @@ function amemoCesk(cc)
   EvalState.prototype.next =
     function (kont)
     {
-      try {
+//      try {
         return evalNode(this.node, this.benv, gc(this, kont), kont);
-    } catch (e)
-    {
-      print(e.stack);
-      return kont.unch(new ErrorState(String(e), this.node, Benv.empty(), this.store));
-    }
+//    } catch (e)
+//    {
+//      print(e.stack);
+//      return kont.unch(new ErrorState(String(e), this.node, Benv.empty(), this.store));
+//    }
     }
   EvalState.prototype.addresses =
     function ()
@@ -732,13 +737,13 @@ function amemoCesk(cc)
   KontState.prototype.next =
     function (kont)
     {
-    try {
+//    try {
       return applyKont(this.frame, this.value, gc(this, kont), kont)
-    } catch (e)
-    {
-      print(e.stack);
-      return kont.unch(new ErrorState(String(e), this.value, Benv.empty(), this.store));
-    }
+//    } catch (e)
+//    {
+//      print(e.stack);
+//      return kont.unch(new ErrorState(String(e), this.value, Benv.empty(), this.store));
+//    }
     }
   KontState.prototype.addresses =
     function ()
