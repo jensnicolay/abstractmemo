@@ -853,7 +853,7 @@ function TypeLattice()
       module.reverse =
         function (x)
         {
-          if (x instanceof APair) { return new APair(x.cars.join(x.cdrs), ArraySet.from1(Nul)) };
+          if (x instanceof APair) { return [new APair(x.cars.join(x.cdrs), ArraySet.from1(Nul))] };
           return [];
         }
       module.cons =
@@ -861,17 +861,23 @@ function TypeLattice()
         {
           var xx = (x instanceof APair) ? x.cars.join(x.cdrs) : ArraySet.from1(x); 
           var yy = (y instanceof APair) ? y.cars.join(y.cdrs) : ArraySet.from1(y); 
-          return new APair(xx, yy);
+          return [new APair(xx, yy)];
         }
-
+      
       module.sqrt =
         function (x)
         {
           if (x === BOT)
           {
-            return BOT;
+            return [];
           }
-          return Num;
+          return [Num];
+        }
+      
+      module.random =
+        function ()
+        {
+          return [Num];
         }
       
     module.abst1 =

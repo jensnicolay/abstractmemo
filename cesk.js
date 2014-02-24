@@ -77,7 +77,7 @@ function amemoCesk(cc)
 //      print("apply", application, operandValues);
       var fun = this.node;
       
-      if (memoFlag)
+      if (memoFlag && !impureApps.contains(application))
       {
         var appStates = appTable.get(fun, operandValues);
         var mValue = BOT;

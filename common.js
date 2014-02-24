@@ -1098,7 +1098,7 @@ Set.prototype.subsumes =
     {
       return false;
     }
-    var xValues = this.values();
+    var xValues = x.values();
     for (var i = 0; i < xValues.length; i++)
     {
       if (!this.contains(xValues[i]))
