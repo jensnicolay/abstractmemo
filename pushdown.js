@@ -339,7 +339,7 @@ Pushdown.run =
           err.dsg = {etg:etg, ecg:ecg, initial:initial};
           throw err;
         }
-        var c = dS.shift();
+        var c = dS.pop();
         //ecg = ecg.addEdge(new Edge(c, null, c));
         var dd = Pushdown.sprout(c, etg, ecg, ceskDriver);
         dE = dE.concat(dd[0]);

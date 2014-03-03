@@ -144,7 +144,7 @@ function amemoCesk(cc)
 //        return handleReturnValue(atomicValue, fun, extendedStore, extendedStore, kont);
 //      }
       extendedBenv.application = application;
-      var frame = new ReturnKont(application); // TODO: could also mark this with (lam, rands)?
+      var frame = new ReturnKont(application); 
       return kont.push(frame, new EvalState(exp, extendedBenv, extendedStore));
 //      return kont.unch(new EvalState(exp, extendedBenv, extendedStore));
     }
@@ -867,107 +867,33 @@ function amemoCesk(cc)
     return evalBody(body, benv, store, kont);
   }
     
-  function IfKont(node, benv)
+  function ReturnKont(mark)
   {
-    this.node = node;
-    this.benv = benv;
-  }
-  IfKont.prototype.equals =
-    function (x)
-    {
-      return x instanceof IfKont
-        && this.node === x.node 
-        && Eq.equals(this.benv, x.benv);
-    }
-  IfKont.prototype.hashCode =
-    function ()
-    {
-      var prime = 7;
-      var result = 1;
-      result = prime * result + this.node.hashCode();
-      result = prime * result + this.benv.hashCode();
-      return result;
-    }
-  IfKont.prototype.toString =
-    function ()
-    {
-      return "if-" + this.node.tag;
-    }
-  IfKont.prototype.nice =
-    function ()
-    {
-      return "if-" + this.node.tag;
-    }
-  IfKont.prototype.addresses =
-    function ()
-    {
-      return this.benv.addresses();
-    }
-  IfKont.prototype.apply =
-    function (conditionValue, store, kont)
-    {
-      var node = this.node;
-      var benv = this.benv;
-      return dispatchConditional(node, conditionValue, benv, store, kont); 
-    }
-  
-  function dispatchConditional(node, conditionValue, benv, store, kont)
-  {
-    var consequent = node.cdr.cdr.car;
-    var alternate = node.cdr.cdr.cdr.car;
-    var tfb = trueFalse(conditionValue);
-    if (tfb.equals(L_BOOLEAN))
-    {
-      var consequentState = kont.unch(new EvalState(consequent, benv, store));
-      var alternateState = kont.unch(new EvalState(alternate, benv, store));
-      return consequentState.concat(alternateState);
-    }
-    else if (tfb.equals(L_TRUE))
-    {
-      return kont.unch(new EvalState(consequent, benv, store));
-    }
-    else
-    {
-      return kont.unch(new EvalState(alternate, benv, store));
-    }    
-  }
-  
-  function trueFalse(conditionValue)
-  {
-    return SetValue.from(conditionValue._set._arr.map(
-      function (av)
-      {
-        return av.ToBoolean()
-      }));
-  }
-  
-  function ReturnKont(node)
-  {
-    this.node = node; // application 
+    this.mark = mark;
   }
   ReturnKont.prototype.equals =
     function (x)
     {
       return x instanceof ReturnKont
-        && Eq.equals(this.node, x.node)
+        && Eq.equals(this.mark, x.mark)
     }
   ReturnKont.prototype.hashCode =
     function ()
     {
       var prime = 7;
       var result = 1;
-      result = prime * result + this.node.hashCode();
+      result = prime * result + HashCode.hashCode(this.mark);
       return result;
     }
   ReturnKont.prototype.toString =
     function ()
     {
-      return "ret-" + this.node.tag;
+      return "ret-" + mark;
     }
   ReturnKont.prototype.nice =
     function ()
     {
-      return "ret-" + this.node.tag;
+      return "ret-" + mark;
     }
   ReturnKont.prototype.addresses =
     function ()
@@ -1050,7 +976,7 @@ function amemoCesk(cc)
     store = store.updateAval(addr, atomicValue);
     if (memoFlag)
     {
-      var apps = kont.ss._apps.values();
+      var apps = kont.ss.applicationContexts().map(function (returnKont) {return returnKont.node});
       impureApps = impureApps.addAll(apps);
       print(apps, "=> impure now", impureApps);
     }
@@ -1081,11 +1007,36 @@ function amemoCesk(cc)
     return frame.apply(value, store, kont);
   }
   
+  function trueFalse(conditionValue)
+  {
+    return SetValue.from(conditionValue._set._arr.map(
+      function (av)
+      {
+        return av.ToBoolean()
+      }));
+  }
+
   function evalIf(node, benv, store, kont)
   {
     var condition = node.cdr.car;
     var atomicValue = evalAtomic(condition, benv, store);
-    return dispatchConditional(node, atomicValue, benv, store, kont);
+    var consequent = node.cdr.cdr.car;
+    var alternate = node.cdr.cdr.cdr.car;
+    var tfb = trueFalse(atomicValue);
+    if (tfb.equals(L_BOOLEAN))
+    {
+      var consequentState = kont.unch(new EvalState(consequent, benv, store));
+      var alternateState = kont.unch(new EvalState(alternate, benv, store));
+      return consequentState.concat(alternateState);
+    }
+    else if (tfb.equals(L_TRUE))
+    {
+      return kont.unch(new EvalState(consequent, benv, store));
+    }
+    else
+    {
+      return kont.unch(new EvalState(alternate, benv, store));
+    }    
   }
   
   function evalAnd(node, benv, store, kont)
@@ -1246,11 +1197,11 @@ function amemoCesk(cc)
     }
     throw new Error("cannot handle node " + node); 
   }
-  
-  function RaAppStackSummary(addresses, apps)
+
+  function RaAppStackSummary(addresses, marks)
   {
     this._addresses = addresses;
-    this._apps = apps;
+    this._marks = marks;
   }
 
   RaAppStackSummary.empty =
@@ -1262,7 +1213,7 @@ function amemoCesk(cc)
   RaAppStackSummary.prototype.toString =
     function ()
     {
-      return this._addresses + "[" + this._apps + "]";
+      return this._addresses + "[" + this._marks + "]";
     }
 
   RaAppStackSummary.prototype.equals =
@@ -1270,7 +1221,7 @@ function amemoCesk(cc)
     {
       return (x instanceof RaAppStackSummary)
         && this._addresses.equals(x._addresses)
-        && this._apps.equals(x._apps)
+        && this._marks.equals(x._marks)
     }
 
   RaAppStackSummary.prototype.subsumes =
@@ -1278,7 +1229,7 @@ function amemoCesk(cc)
     {
       return (x instanceof RaAppStackSummary)
         && this._addresses.subsumes(x._addresses)
-        && this._apps.subsumes(x._apps)
+        && this._marks.subsumes(x._marks)
     }
 
   RaAppStackSummary.prototype.hashCode =
@@ -1287,7 +1238,7 @@ function amemoCesk(cc)
       var prime = 43;
       var result = 1;
       result = prime * result + this._addresses.hashCode();
-      result = prime * result + this._apps.hashCode();
+      result = prime * result + this._marks.hashCode();
       return result;    
     }
 
@@ -1295,14 +1246,20 @@ function amemoCesk(cc)
     function (frame)
     {
       var addresses = this._addresses.addAll(frame.addresses());
-      var apps = frame instanceof ReturnKont ? this._apps.add(frame.node) : this._apps;
-      return new RaAppStackSummary(addresses, apps);
+      var marks = frame.mark ? this._marks.add(frame.mark) : this._marks;
+      return new RaAppStackSummary(addresses, marks);
     }
 
   RaAppStackSummary.prototype.addresses =
     function ()
     {
       return this._addresses.values();
+    }
+
+  RaAppStackSummary.prototype.marks =
+    function ()
+    {
+      return this._marks.values();
     }
 
   var module = {};
