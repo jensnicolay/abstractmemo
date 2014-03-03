@@ -76,44 +76,6 @@ function amemoCesk(cc)
     {
 //      print("apply", application, operandValues);
       var fun = this.node;
-      
-      if (memoFlag && !impureApps.contains(application))
-      {
-        var appStates = appTable.get(fun, operandValues);
-        var mValue = BOT;
-        var mStore = BOT;
-        var currentState = kont.source;
-        for (var i = 0; i < appStates.length; i++)
-        {
-          var s = appStates[i];
-          if (s === currentState)
-          {
-            continue;
-          }
-          var appStore = s.q.store;
-          if (!appStore.subsumes(store))
-          {
-            continue;
-          }
-          var valueStates = Dsg.valuesOf(kont.etg, kont.ecg)(s);
-          var appValue = valueStates.map(function (s) {return s.q.value || BOT}).reduce(Lattice.join, BOT);
-          if (appValue !== BOT)
-          {
-            mValue = mValue.join(appValue);
-            mStore = mStore.join(appStore);
-            // break; // if "return first" strategy then break; else continue
-          }
-        }
-        if (mStore !== BOT)
-        {
-          return kont.pop(function (frame) {return new KontState(frame, mValue, mStore)}, "MEMO");
-        }
-        else
-        {
-          appTable = appTable.put(fun, operandValues, kont.source);
-        }
-      }
-
       var extendedBenv = this.statc.copy();
       var extendedStore = store;
       var params = this.params;
@@ -132,6 +94,45 @@ function amemoCesk(cc)
         params = params.cdr;
         i++;
       }
+      
+      if (memoFlag && !impureApps.contains(application))
+      {
+        var appStates = appTable.get(fun, extendedBenv, kont.ss);
+        var mValue = BOT;
+        var mStore = BOT;
+        var currentState = kont.source;
+        for (var i = 0; i < appStates.length; i++)
+        {
+          var s = appStates[i];
+          if (s === currentState)
+          {
+            continue;
+          }
+          var valueStates = Dsg.valuesOf(kont.etg, kont.ecg)(s);
+          valueStates.forEach(
+            function (vs)
+            {
+              if (vs.q.value)
+              {
+                mValue = mValue.join(vs.q.value);
+                mStore = mStore.join(vs.q.store);
+              }
+            });
+//          if (mValue !== BOT)
+//          {
+//            // break; // if "return first" strategy then break; else continue
+//          }
+        }
+        if (mStore !== BOT)
+        {
+          return kont.pop(function (frame) {return new KontState(frame, mValue, mStore)}, "MEMO");
+        }
+        else
+        {
+          appTable = appTable.put(fun, extendedBenv, kont.ss, kont.source);
+        }
+      }
+      
             
 //      if (!(this.body.cdr instanceof Null))
 //      {
@@ -1273,7 +1274,7 @@ function amemoCesk(cc)
       override = override || {};
       var benv = override.benv || global;
       var haltFrame = new HaltKont([]);
-      return {q:new InitState(node, benv, override.store || store, haltFrame), ss:RaAppStackSummary.empty()};
+      return {q:new InitState(node, benv, override.store || store, haltFrame), ss:RaStackSummary.empty()};
     }
   
   return module; 
@@ -1426,29 +1427,39 @@ AppTable.empty =
   }
 
 AppTable.prototype.put =
-  function (lam, rands, s) // TODO: store in or out of AppTable?
+  function (lam, benv, ss, s)
   {
-    var map = this._map.put(lam.tag, this._map.get(lam.tag, ArraySet.empty()).add([rands, s]));
+    var map = this._map.put(lam.tag, this._map.get(lam.tag, ArraySet.empty()).add([benv, ss, s]));
     return new AppTable(map);
   }
 
 AppTable.prototype.get =
-  function (lam, rands)
+  function (lam, benv, ss)
   {
     var entries = this._map.get(lam.tag, ArraySet.empty()).values();
     var result = [];
     outer: for (var j = 0; j < entries.length; j++)
     {
       var entry = entries[j];
-      var mRands = entry[0];
-      for (var k = 0; k < mRands.length; k++)
+//      var mRands = entry[0];
+//      for (var k = 0; k < mRands.length; k++)
+//      {
+//        if (!mRands[k].subsumes(rands[k]))
+//        {
+//          continue outer; 
+//        }
+//      }
+      var mBenv = entry[0];
+      if (!mBenv.subsumes(benv))
       {
-        if (!mRands[k].subsumes(rands[k]))
-        {
-          continue outer; 
-        }
+        continue outer;
       }
-      result.push(entry[1]);
+      var mSs = entry[1];
+      if (!mSs.subsumes(ss))
+      {
+        continue outer;
+      }
+      result.push(entry[2]);
     }
     return result;
   }
