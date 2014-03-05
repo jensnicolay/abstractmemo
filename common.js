@@ -718,7 +718,12 @@ Map.prototype.equals =
     {
       return false;
     }
-    return this.subsumes(x) && x.subsumes(this);
+    return this.iterateEntries(
+        function (entry)
+        {
+          var xValue = x.get(entry.key);
+          return xValue !== undefined && entry.value.equals(xValue);
+        }, this);
   }
 
 Map.prototype.hashCode =
