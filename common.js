@@ -29,15 +29,13 @@ var HashCode = {};
 HashCode.hashCode =
   function (x)
   {
-    if (!x)
+    if (x === undefined || x === null)
     {
-      return 0;
+      return 0; 
     }
-    if (x === true || typeof x === "number")
-    {
-      return x >>> 0; 
-    }
-//    if (!x.hashCode) {print("!!!", Object.keys(x))}
+    if (!x.hashCode) {
+      print(x, x.constructor)
+      };
     return x.hashCode();
   }
   
@@ -45,86 +43,98 @@ var Visitor = {};
 Visitor.accept = function (visitor) {return function (x) {return x.accept ? x.accept(visitor) : String(x)}};
   
 Boolean.prototype.equals =
-	function (x)
-	{
-		return this.valueOf() === x.valueOf();
-	};
-	
+  function (x)
+  {
+    return this.valueOf() === x.valueOf();
+  };
+  
 Boolean.prototype.hashCode =
   function ()
   {
-    return this.valueOf() ? 1 : 0;
+    return this.valueOf() ? 1231 : 1237;
   }
-	
+
+Number.prototype.equals =
+  function (x)
+  {
+    return this.valueOf() === x; 
+  };
+  
+Number.prototype.hashCode =
+  function ()
+  {
+    return this.valueOf();
+  }
+  
 Array.prototype.toString =
-	function ()
-	{
-		// return "[" + this.join(",") + "]"; doesn't work for [undefined]
-		if (this.length === 0)
-		{
-			return "[]";
-		}
-		var s = "[";
-		for (var i = 0; i < this.length - 1; i++)
-		{
-			s += this[i] + ","; 
-		}
-		s += this[i] + "]";
-		return s;		
-	};
+  function ()
+  {
+    // return "[" + this.join(",") + "]"; doesn't work for [undefined]
+    if (this.length === 0)
+    {
+      return "[]";
+    }
+    var s = "[";
+    for (var i = 0; i < this.length - 1; i++)
+    {
+      s += this[i] + ","; 
+    }
+    s += this[i] + "]";
+    return s;   
+  };
 
 Array.prototype.memberAt =
-	function (x)
-	{
-		for (var i = 0; i < this.length; i++)
-		{
-			var el = this[i];
-			if (Eq.equals(x, el))
-			{
-				return i;
-			}
-		}
-		return -1;
-	};
+  function (x)
+  {
+    for (var i = 0; i < this.length; i++)
+    {
+      var el = this[i];
+      if (Eq.equals(x, el))
+      {
+        return i;
+      }
+    }
+    return -1;
+  };
 
 Array.prototype.flatten =
-	function ()
-	{
-		return this.reduce(function (p, c) {return p.concat(c)}, []);
-	};
+  function ()
+  {
+    return this.reduce(function (p, c) {return p.concat(c)}, []);
+  };
 
 Array.prototype.flatMap =
-	function (f, th)
-	{
-		return this.map(f, th).flatten();
-	};
-	
+  function (f, th)
+  {
+    return this.map(f, th).flatten();
+  };
+  
 Array.prototype.addFirst =
-	function (x)
-	{
-		return [x].concat(this);
-	};		
+  function (x)
+  {
+    return [x].concat(this);
+  };    
 
 Array.prototype.addLast =
-	function (x)
-	{
-		if (Array.isArray(x))
-		{
-			return this.concat([x]);
-		}
-		return this.concat(x);
-	};		
-	
+  function (x)
+  {
+    if (Array.isArray(x))
+    {
+      return this.concat([x]);
+    }
+    return this.concat(x);
+  };    
+  
 Array.prototype.addUniqueLast =
-	function (x)
-	{
-		if (this.memberAt(x) > -1)
-		{
-			return this;
-		}
-		return this.addLast(x);
-	};
-	
+  function (x)
+  {
+    if (this.memberAt(x) > -1)
+    {
+      return this;
+    }
+    return this.addLast(x);
+  };
+  
 Array.prototype.remove =
   function (x)
   {
@@ -176,47 +186,65 @@ Array.prototype.toSet =
   }
   
 Array.prototype.equals =
-	function (x)
-	{
-		if (this === x)
-		{
-			return true;
-		}
-		if (x === undefined || x === null)
-		{
-			return false;
-		}
-		var length = x.length;
-		if (this.length != length)
-		{
-			return false;
-		}
-		for (var i = 0; i < length; i++)
-		{
-			var xi = x[i];
-			var thisi = this[i];
-			if (!Eq.equals(xi, thisi))
-			{
-				return false;
-			}
-		}
-		return true;
-	};
-	
+  function (x)
+  {
+    if (this === x)
+    {
+      return true;
+    }
+    if (x === undefined || x === null)
+    {
+      return false;
+    }
+    var length = x.length;
+    if (this.length != length)
+    {
+      return false;
+    }
+    for (var i = 0; i < length; i++)
+    {
+      var xi = x[i];
+      var thisi = this[i];
+      if (!Eq.equals(xi, thisi))
+      {
+        return false;
+      }
+    }
+    return true;
+  };
+  
 Array.prototype.hashCode =
   function()
   {
-    var hash = 0, i, char;
-    if (this.length == 0) return hash;
-    for (i = 0; i < this.length; i++)
+    var l = this.length;
+    if (l === 0)
     {
-      val = HashCode.hashCode(this[i]);
-      hash = ((hash<<5) - hash) + val;
-      hash = hash & hash;
+      return 0;
     }
-    return hash;
+    var result = 1;
+    for (var i = 0; i < l; i++)
+    {
+      result = (31 * result + HashCode.hashCode(this[i])) >> 0;
+    }
+    return result;
   }
-	  
+    
+Array.prototype.setHashCode =
+  function()
+  {
+    var l = this.length;
+    if (l === 0)
+    {
+      return 0;
+    }
+    var result = 1;
+    for (var i = 0; i < l; i++)
+    {
+      result = result ^ HashCode.hashCode(this[i]);
+    }
+    return result;
+  }
+      
 Array.prototype.subsumes =
   function (xs)
   {
@@ -229,46 +257,46 @@ Array.prototype.subsumes =
     }
     return true;
   };
-	  
+    
 Array.prototype.setEquals =
-	function (x)
-	{
-		var length = x.length;
-		if (this.length != length)
-		{
-			return false;
-		}
-		for (var i = 0; i < length; i++)
-		{
-			var xi = x[i];
-			if (this.memberAt(xi) === -1)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
+  function (x)
+  {
+    var length = x.length;
+    if (this.length != length)
+    {
+      return false;
+    }
+    for (var i = 0; i < length; i++)
+    {
+      var xi = x[i];
+      if (this.memberAt(xi) === -1)
+      {
+        return false;
+      }
+    }
+    return true;
+  }
 
 Array.prototype.addEntry =
-	function (key, value)
-	{
-		return this.addFirst([key, value]);	
-	};
-	
+  function (key, value)
+  {
+    return this.addFirst([key, value]); 
+  };
+  
 Array.prototype.getEntry =
-	function (key)
-	{
-		for (var i = 0; i < this.length; i++)
-		{
-			var entry = this[i];
-			var entryKey = entry[0];
-			if (Eq.equals(key, entryKey))
-			{
-				return entry;
-			}
-		}
-		return false;
-	}
+  function (key)
+  {
+    for (var i = 0; i < this.length; i++)
+    {
+      var entry = this[i];
+      var entryKey = entry[0];
+      if (Eq.equals(key, entryKey))
+      {
+        return entry;
+      }
+    }
+    return false;
+  }
 
 Array.prototype.getValue =
   function (key)
@@ -277,20 +305,20 @@ Array.prototype.getValue =
   }
 
 Array.prototype.updateEntry =
-	function (key, value)
-	{
-		for (var i = 0; i < this.length; i++)
-		{
-			var entry = this[i];
-			var entryKey = entry[0];
-			if (Eq.equals(entryKey, key))
-			{
-				return this.slice(0, i).concat([[entryKey, value]]).concat(this.slice(i + 1));
-			}
-		}
-		return this.concat([[key, value]]);
-	};
-	
+  function (key, value)
+  {
+    for (var i = 0; i < this.length; i++)
+    {
+      var entry = this[i];
+      var entryKey = entry[0];
+      if (Eq.equals(entryKey, key))
+      {
+        return this.slice(0, i).concat([[entryKey, value]]).concat(this.slice(i + 1));
+      }
+    }
+    return this.concat([[key, value]]);
+  };
+  
 Array.prototype.entryKeys =
   function ()
   {
@@ -312,33 +340,33 @@ Array.prototype.entryValues =
   } 
 
 Array.prototype.getSetEntry =
-	function (key)
-	{
-		var entry = this.getEntry(key);
-		if (entry)
-		{
-			return entry[1];
-		}
-		return [];
-	}	
-	
+  function (key)
+  {
+    var entry = this.getEntry(key);
+    if (entry)
+    {
+      return entry[1];
+    }
+    return [];
+  } 
+  
 Array.prototype.updateSetEntry =
-	function (key, value)
-	{
-		for (var i = 0; i < this.length; i++)
-		{
-			var entry = this[i];
-			var entryKey = entry[0];
-			if (Eq.equals(entryKey, key))
-			{
-				return this.slice(0, i).concat([[key, entry[1].addUniqueLast(value)]]).concat(this.slice(i + 1));
-			}
-		}
-		return this.concat([[key, [value]]]);
-	};
-	
+  function (key, value)
+  {
+    for (var i = 0; i < this.length; i++)
+    {
+      var entry = this[i];
+      var entryKey = entry[0];
+      if (Eq.equals(entryKey, key))
+      {
+        return this.slice(0, i).concat([[key, entry[1].addUniqueLast(value)]]).concat(this.slice(i + 1));
+      }
+    }
+    return this.concat([[key, [value]]]);
+  };
+  
 var Arrays = {};
-	
+  
 Arrays.indexOf =
   function (x, arr, eq)
   {
@@ -472,35 +500,37 @@ Arrays.values =
   }
 
 String.prototype.startsWith =
-	function (s)
-	{
-		return this.lastIndexOf(s, 0) === 0;
-	};
-	
+  function (s)
+  {
+    return this.lastIndexOf(s, 0) === 0;
+  };
+  
 String.prototype.endsWith = 
-	function (s)
-	{
-		return this.indexOf(s, this.length - s.length) !== -1;
-	};
-	
+  function (s)
+  {
+    return this.indexOf(s, this.length - s.length) !== -1;
+  };
+  
 String.prototype.equals =
-	function (x)
-	{
-		return this.localeCompare(x) === 0;	
-	};
-	
+  function (x)
+  {
+    return this.localeCompare(x) === 0; 
+  };
+  
 String.prototype.hashCode =
   function()
   {
-    var hash = 0, i, char;
-    if (this.length == 0) return hash;
-    for (i = 0; i < this.length; i++)
+    var l = this.length;
+    if (l === 0)
     {
-      char = this.charCodeAt(i);
-      hash = ((hash<<5) - hash) + char;
-      hash = hash & hash;
+      return 0;
     }
-    return hash;
+    var result = 1;
+    for (var i = 0; i < l; i++)
+    {
+      result = (31 * result + this.charCodeAt(i)) >> 0;
+    }
+    return result;
   }
 
 var Character = {};
@@ -518,24 +548,11 @@ Character.isDigit =
   }
   
 Function.prototype.toString =
-	function ()
-	{
-		return this.name + "()";
-	};
-
-Number.prototype.equals =
-  function (x)
-  {
-    return this.valueOf() === x; 
-  };
-  
-Number.prototype.hashCode =
   function ()
   {
-    return this.valueOf();
-  }
-	  
-	
+    return this.name + "()";
+  };    
+  
 // debug
 function d(value) { print(Array.prototype.slice.call(arguments)); return value; }
 function dreadline() { var str = readline(); if (str === ":b") { throw new Error(":b"); }}
@@ -729,7 +746,14 @@ Map.prototype.equals =
 Map.prototype.hashCode =
   function ()
   {
-    return this.entries().reduce(function (result, entry) {return result + HashCode.hashCode(entry.key) + HashCode.hashCode(entry.value)}, 0);
+    var entries = this.entries();
+    var result = 1;
+    for (var i = 0; i < entries.length; i++)
+    {
+      var entry = entries[i];
+      result = (result + (31 * HashCode.hashCode(entry.key) ^ HashCode.hashCode(entry.value))) >> 0;
+    }
+    return result;
   }
 
 Map.prototype.putAll =
@@ -879,7 +903,7 @@ HashMap.prototype = Object.create(Map.prototype);
 HashMap.empty =
   function (size)
   {
-    var entries = new Array(size || 13);
+    var entries = new Array(size || 31);
     entries.size = 0;
     return new HashMap(entries);
   }
@@ -893,7 +917,8 @@ HashMap.from =
 HashMap.prototype.put =
   function (key, value)
   {
-    var hash = Math.abs(key.hashCode()) % this._entries.length;
+    var keyHash = key.hashCode();
+    var hash = (keyHash >>> 0) % this._entries.length;
     var buckets = this._entries[hash];
     if (!buckets)
     {
@@ -926,7 +951,8 @@ HashMap.prototype.put =
 HashMap.prototype.get =
   function (key, bot)
   {
-    var hash = Math.abs(key.hashCode()) % this._entries.length;
+    var keyHash = key.hashCode();
+    var hash = (keyHash >>> 0) % this._entries.length;
     var buckets = this._entries[hash];    
     if (!buckets)
     {
@@ -946,7 +972,8 @@ HashMap.prototype.get =
 HashMap.prototype.remove =
   function (key)
   {
-    var hash = Math.abs(key.hashCode()) % this._entries.length;
+    var keyHash = key.hashCode();
+    var hash = (keyHash >>> 0) % this._entries.length;
     var buckets = this._entries[hash];
     if (!buckets)
     {
@@ -1032,51 +1059,6 @@ HashMap.prototype.nice =
     return this.entries().map(function (entry) {return entry.key + " -> " + entry.value}).join("\n");
   }
 
-function LatticeMap(map, bot)
-{
-  this._map = map;
-  this.bot = bot;
-}
-LatticeMap.prototype = Object.create(Map.prototype);
-
-LatticeMap.empty =
-  function (bot, size)
-  {
-    return new LatticeMap(HashMap.empty(size), bot);
-  }
-LatticeMap.prototype.put =
-  function (key, value)
-  {
-    var existing = this._map.get(key, this.bot);
-    return new LatticeMap(this._map.put(key, existing.join(value)), this.bot);
-  }
-LatticeMap.prototype.get =
-  function (key)
-  {
-    return this._map.get(key, this.bot);
-  }
-
-LatticeMap.prototype.size =
-  function ()
-  {
-    return this._map.size();
-  }
-LatticeMap.prototype.toString =
-  function ()
-  {
-    return this._map.toString();
-  }
-LatticeMap.prototype.entries =
-  function ()
-  {
-    return this._map.entries();
-  }
-LatticeMap.prototype.map =
-  function (f, ths)
-  {
-    return new LatticeMap(this._map.map(f, ths));
-  }
-
 /*
  * Set interface
  * 
@@ -1139,9 +1121,7 @@ Set.prototype.equals =
 Set.prototype.hashCode =
   function ()
   {
-    var values = this.values();
-    var result = values.reduce(function (result, x) {return result + HashCode.hashCode(x)}, 0);
-    return result;
+    return this.values().setHashCode();
   }
 
 Set.prototype.compareTo =
@@ -1260,6 +1240,143 @@ HashSet.prototype.nice =
     return this.toString();
   }
 
+function CombineSet(s1, s2)
+{
+  assertEquals(s1, s2);
+  assertEquals(s1.hashCode(), s2.hashCode());
+  this._s1 = s1;
+  this._s2 = s2;
+}
+CombineSet.prototype = Object.create(Set.prototype);
+
+CombineSet.prototype.clear =
+  function ()
+  {
+    return new CombineSet(this._s1.clear(), this._s2.clear());
+  }
+
+CombineSet.prototype.add =
+  function (value)
+  {
+    var s1 = this._s1.add(value);
+    var s2 = this._s2.add(value);
+    return new CombineSet(s1, s2);
+  }
+
+CombineSet.prototype.addAll =
+  function (values)
+  {
+    var s1 = this._s1.addAll(values);
+    var s2 = this._s2.addAll(values);
+    return new CombineSet(s1, s2);
+  }
+
+CombineSet.prototype.remove =
+  function (value)
+  {
+    var s1 = this._s1.remove(value);
+    var s2 = this._s2.remove(value);
+    return new CombineSet(s1, s2);
+  }
+
+CombineSet.prototype.removeAll =
+  function (values)
+  {
+    var s1 = this._s1.removeAll(values);
+    var s2 = this._s2.removeAll(values);
+    return new CombineSet(s1, s2);
+  }
+
+CombineSet.prototype.contains =
+  function (value)
+  {
+    var s1 = this._s1.contains(value);
+    var s2 = this._s2.contains(value);
+    assertEquals(s1, s2);
+    return s1;
+  }
+
+CombineSet.prototype.filter =
+  function (f, ths)
+  {
+    var s1 = this._s1.filter(f, ths);
+    var s2 = this._s2.filter(f, ths);
+    return new CombineSet(s1, s2);
+  }
+
+CombineSet.prototype.values =
+  function ()
+  {
+    var s1 = this._s1.values();
+    var s2 = this._s2.values();
+    assertSetEquals(s1, s2);
+    return s1;
+  }
+
+CombineSet.prototype.size =
+  function ()
+  {
+    var s1 = this._s1.size();
+    var s2 = this._s2.size();
+    assertEquals(s1, s2);
+    return s1;
+  }
+
+CombineSet.prototype.toString =
+  function ()
+  {
+    return this._s1.toString();
+  }
+
+CombineSet.prototype.nice =
+  function ()
+  {
+    return this._s1.toString();
+  }
+
+CombineSet.prototype.equals =
+  function (x)
+  {
+    var s1 = this._s1.equals(x);
+    var s2 = this._s2.equals(x);
+    assertEquals(s1, s2);
+    return s1;
+  }
+
+CombineSet.prototype.hashCode =
+  function ()
+  {
+    var s1 = this._s1.hashCode();
+    var s2 = this._s2.hashCode();
+    assertEquals(s1, s2);
+    return s1;
+  }
+
+CombineSet.prototype.join =
+  function (x)
+  {
+    var s1 = this._s1.join(x);
+    var s2 = this._s2.join(x);
+    return new CombineSet(s1, s2);
+  } 
+
+CombineSet.prototype.meet =
+  function (x)
+  {
+    var s1 = this._s1.meet(x);
+    var s2 = this._s2.meet(x);
+    return new CombineSet(s1, s2);
+  } 
+
+CombineSet.prototype.subtract =
+  function (x)
+  {
+    var s1 = this._s1.subtract(x);
+    var s2 = this._s2.subtract(x);
+    return new CombineSet(s1, s2);
+  } 
+
+
 function ArraySet(arr)
 {
   this._arr = arr;
@@ -1360,133 +1477,4 @@ ArraySet.prototype.nice =
   function ()
   {
     return this.toString();
-  }
-
-
-/*
- * Deque interface
- * 
- * equals, hashCode (based on values)
- * addFirst, addLast
- * removeFirst, removeLast
- * size
- *  
- */
-function ArrayDeque(arr)
-{
-  this._arr = arr;
-}
-
-ArrayDeque.empty =
-  function ()
-  {
-    return new ArrayDeque([]);
-  }
-
-ArrayDeque.prototype.addFirst =
-  function (x)
-  {
-    var arr = this._arr.slice(0).unshift(x);
-    return new ArrayDeque(arr);
-  }
-
-ArrayDeque.prototype.addLast =
-  function (x)
-  {
-    var arr = this._arr.slice(0).push(x);
-    return new ArrayDeque(arr);
-  }
-
-ArrayDeque.prototype.removeFirst =
-  function ()
-  {
-    var arr = this._arr.slice(0).shift(1);
-    return new ArrayDeque(arr);
-  }
-
-ArrayDeque.prototype.removeLast =
-  function ()
-  {
-    var arr = this._arr.slice(0).pop();
-    return new ArrayDeque(arr);
-  }
-
-ArrayDeque.prototype.value =
-  function ()
-  {
-    return this._value;
-  }
-
-ArrayDeque.prototype.size =
-  function ()
-  {
-    return this._arr.length;
-  }
-
-ArrayDeque.prototype.toString =
-  function ()
-  {
-    return this._arr.toString();
-  }
-
-
-/*
- * Queue interface
- * 
- * equals, hashCode (based on values)
- * add, remove
- * size
- *  
- */
-function ArrayQueue(arr)
-{
-  this._arr = arr;
-}
-
-ArrayQueue.empty =
-  function ()
-  {
-    return new ArrayQueue([]);
-  }
-
-ArrayQueue.prototype.add =
-  function (x)
-  {
-    var arr = this._arr.slice(0).push(x);
-    return new ArrayQueue(arr);
-  }
-
-ArrayQueue.prototype.peek =
-  function ()
-  {
-    if (this._arr.length === 0)
-    {
-      throw new Error("queue empty");
-    }
-    return this._arr[0];
-  }
-
-ArrayQueue.prototype.remove =
-  function ()
-  {
-    var arr = this._arr.slice(0).shift(1);
-    return new ArrayQueue(arr);
-  }
-
-ArrayQueue.prototype.size =
-  function ()
-  {
-    return this._arr.length;
-  }
-
-ArrayQueue.prototype.isEmpty =
-  function ()
-  {
-    return this._arr.length > 0;
-  }
-
-ArrayQueue.prototype.toString =
-  function ()
-  {
-    return this._arr.toString();
   }

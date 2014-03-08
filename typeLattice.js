@@ -5,7 +5,7 @@ function TypeLattice()
 		var module = Object.create(Lattice.prototype);
     
     var Num = new LatticeValue();
-    Num.isNum = function (x) { return x instanceof Number || typeof x === "number"};
+    Num.isNum = function (x) { return typeof x === "number"};
     Num.compareTo =
       function (x)
       {
@@ -80,84 +80,8 @@ function TypeLattice()
         return visitor.visitNum(Num);
       }
     
-//    var Bool = new LatticeValue();
-//    Bool.isBool = function (x) { return x instanceof Boolean || typeof x === "boolean"};
-//    Bool.compareTo =
-//      function (x)
-//      {
-//        if (x === Top)
-//        {
-//          return -1;
-//        }
-//        if (x === Bool)
-//        {
-//          return 0;
-//        }
-//        if (x == BOT)
-//        {
-//          return 1;
-//        }
-//        return undefined;
-//      }
-//
-//    Bool.toString =
-//      function ()
-//      {
-//        return "Bool";
-//      };
-//      
-//      Bool.hashCode =
-//      function ()
-//      {
-//        return 11;
-//      }
-//      
-//    Bool.join =
-//      function (x)
-//      {
-//        if (x === BOT || x === Bool)
-//        {
-//          return Bool;
-//        }
-//        return Top;
-//      }
-//    
-//    Bool.meet =
-//      function (x)
-//      {
-//        if (x === Bool || x === Top)
-//        {
-//          return Bool;
-//        }
-//        return BOT;
-//      }
-//    
-//    Bool.ToString =
-//      function ()
-//      {
-//        return Str;
-//      };
-//      
-//      Bool.ToNumber =
-//      function ()
-//      {
-//        return Num;
-//      };
-//          
-//      Bool.ToBoolean =
-//      function ()
-//      {
-//        return Bool;
-//      };
-//      
-//    Bool.accept =
-//      function (visitor)
-//      {
-//        return visitor.visitBool(Bool);
-//      }
-    
     var Tru = new LatticeValue();
-    Tru.isTru = function (x) { return (x instanceof Boolean && x.valueOf()) || x === true};
+    Tru.isTru = function (x) { return x === true};
     Tru.compareTo =
       function (x)
       {
@@ -233,7 +157,7 @@ function TypeLattice()
       }
       
       var Fals = new LatticeValue();
-      Fals.isFals = function (x) { return (x instanceof Boolean && x.valueOf() === false) || x === false};
+      Fals.isFals = function (x) { return x === false};
       Fals.compareTo =
         function (x)
         {
@@ -309,7 +233,7 @@ function TypeLattice()
         }
     
     var Str = new LatticeValue();
-    Str.isStr = function (x) { return x instanceof String || typeof x === "string"};
+    Str.isStr = function (x) { return typeof x === "string"};
     Str.compareTo =
       function (x)
       {

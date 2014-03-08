@@ -49,7 +49,7 @@ function Graph(edges)
 Graph.empty =
   function ()
   {
-    return new Graph(HashSet.empty(131));
+    return new Graph(HashSet.empty());
   }
 
 Graph.prototype.equals =
@@ -179,3 +179,28 @@ Graph.prototype.nodes =
 //  {
 //    return new Graph(this._edges.filter(f));
 //  }
+
+Graph.prototype.toDot =
+  function (cc)
+  {
+    cc = cc || {};
+    var nodeLabel = cc.nodeLabel || function (s) {return String(s).substring(0,20)};
+    var nodeStyle = cc.nodeStyle || function (s) {return ""};
+    var dot = "digraph fsm {";//rankdir=LR;\n";
+    var nodes = this.nodes();
+    nodes.forEach(
+      function (node, i)
+      {
+        dot += i + " [label=\"" + nodeLabel(node) + "\"," + nodeStyle(node) + "];\n";
+      });
+    var edges = this.edges();
+    edges.forEach(
+      function (edge)
+      {
+        var sourceIndex = Arrays.indexOf(edge.source, nodes, Eq.equals);
+        var targetIndex = Arrays.indexOf(edge.target, nodes, Eq.equals);
+        dot += sourceIndex + " -> " + targetIndex + " [label=\"" + edge.g + "\"];\n";        
+      });
+    dot += "}";
+    return dot;
+  }

@@ -61,7 +61,7 @@ MonoAddr.prototype.hashCode =
   {
     var prime = 71;
     var result = 1;
-    result = prime * result + this.base.hashCode();
+    result = prime * result + HashCode.hashCode(this.base);
     return result;
   }
 
@@ -123,7 +123,7 @@ ContextAddr.prototype.hashCode =
   {
     var prime = 71;
     var result = 1;
-    result = prime * result + this.base.hashCode();
+    result = prime * result + HashCode.hashCode(this.base);
     result = prime * result + HashCode.hashCode(this.context);
     return result;
   }

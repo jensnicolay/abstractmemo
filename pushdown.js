@@ -15,12 +15,13 @@ HaltKont.prototype.apply =
 HaltKont.prototype.hashCode =
   function ()
   {
-    return 0;
+    return this.rootSet.hashCode();
   }
 HaltKont.prototype.equals =
   function (x)
   {
-    return this === x;
+    return (x instanceof HaltKont)
+      && this.rootSet.equals(x.rootSet);
   }
 HaltKont.prototype.addresses =
   function ()
@@ -126,6 +127,12 @@ ceskDriver.PushUnchKont.prototype.unch =
   function (target, marks)
   {
     return [new Edge(this.source, new Unch(null), target, marks)];
+  }
+
+ceskDriver.PushUnchKont.prototype.memo =
+  function (target, frame)
+  {
+    return [new Edge(this.source, new Pop(frame), target, "MEMO")];
   }
 
 ceskDriver.PopKont =
@@ -354,7 +361,7 @@ Pushdown.run =
 
 Pushdown.addPush =
   function (c, frame, c1, etg, ecg, ceskDriver)
-  { 
+  {
     var cset2 = ecg.successors(c1);
     var popEdges = cset2.flatMap(
         function (c2)
@@ -428,7 +435,6 @@ Pushdown.addEmpty =
 Pushdown.sprout =
   function (c, etg, ecg, ceskDriver)
   {
-//    print("sprout", c.index, c.q);
     var pushUnchEdges = ceskDriver.pushUnch(c, etg, ecg); 
     var ddH = pushUnchEdges
               .filter(function (pushUnchEdge) {return pushUnchEdge.g.isUnch})

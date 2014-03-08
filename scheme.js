@@ -1,5 +1,34 @@
 var __nodeCounter__ = 0;
 
+function Lit(value)
+{
+  this._value = value;
+}
+
+Lit.prototype.equals =
+  function (x)
+  {
+    return x === this;
+  }
+
+Lit.prototype.hashCode =
+  function ()
+  {
+    return HashCode.hashCode(this._value);
+  }
+
+Lit.prototype.value =
+  function ()
+  {
+    return this._value;
+  }
+
+Lit.prototype.toString =
+  function ()
+  {
+    return String(this._value);
+  }
+
 function Null()
 {
 }
@@ -167,7 +196,7 @@ function freeVariables(node)
 {
   function fv(node, env)
   {
-    if (node instanceof Number || node instanceof Boolean || node instanceof String)
+    if (node instanceof Lit)
     {
       return [];
     }
@@ -348,14 +377,14 @@ SchemeTokenizer.prototype.parse =
         var d = this.reader.read();
         if (d === "t")
         {
-          var po = new Boolean(true);
+          var po = new Lit(true);
           po.tag = ++__nodeCounter__;
           po.sp = {pos:this.reader.pos - 1, line:this.reader.line, linePos:this.reader.linePos - 1, length:2};
           return po;
         }
         else if (d === "f")
         {
-          var po = new Boolean(false);
+          var po = new Lit(false);
           po.tag = ++__nodeCounter__;
           po.sp = {pos:this.reader.pos - 1, line:this.reader.line, linePos:this.reader.linePos - 1, length:2};
           return po;
@@ -440,7 +469,7 @@ SchemeTokenizer.prototype.parseString =
       }
       s += c;
     }
-    var po = new String(s);
+    var po = new Lit(s);
     po.tag = ++__nodeCounter__;
     sp.length = this.reader.pos - sp.pos + 1;
     po.sp = sp;
@@ -465,7 +494,7 @@ SchemeTokenizer.prototype.parseNumber =
     {
       throw new Error("TODO");
     }
-    var po = new Number(s);
+    var po = new Lit(parseInt(s));
     po.tag = ++__nodeCounter__;
     sp.length = this.reader.pos - sp.pos;
     po.sp = sp;

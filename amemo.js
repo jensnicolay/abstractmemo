@@ -1,12 +1,12 @@
 var ccs = [];
-ccs.push({gc:false, memo:false, name:"GC off, memo off"});
+//ccs.push({gc:false, memo:false, name:"GC off, memo off"});
 ccs.push({gc:false, memo:true, name:"GC off, memo on"});
-ccs.push({gc:true, memo:false, name:"GC on, memo off"});
-ccs.push({gc:true, memo:true, name:"GC on, memo on"});
+//ccs.push({gc:true, memo:false, name:"GC on, memo off"});
+//ccs.push({gc:true, memo:true, name:"GC on, memo on"});
 
 var ags = [];
 ags.push({a:createMonoTagAg(), name:"0CFA"});
-ags.push({a:create1cfaTagAg(), name:"1CFA"});
+//ags.push({a:create1cfaTagAg(), name:"1CFA"});
 
 var results;
 
@@ -42,14 +42,16 @@ function computeResults(limitMin, x)
   if (!x || x === 1)
   {
 //    sources.push({name:"id", src:"(letrec ((id (lambda (x) x))) (id 3) (id 4))"});
-    sources.push({name:"fac", src:read("test/resources/fac.scm")});
-//    sources.push({name:"rotate", src:read("test/resources/rotate.scm")});
-    sources.push({name:"gcipd", src:read("test/resources/gcIpdExample.scm")});
+//    sources.push({name:"fac", src:read("test/resources/fac.scm")});
+////    sources.push({name:"rotate", src:read("test/resources/rotate.scm")});
+//    sources.push({name:"gcipd", src:read("test/resources/gcIpdExample.scm")});
+    sources.push({name:"fib", src:read("test/resources/fib.scm")});
+    sources.push({name:"fib", src:read("test/resources/fib.scm")});
     sources.push({name:"fib", src:read("test/resources/fib.scm")});
 //    sources.push({name:"mj09", src:read("test/resources/mj09.scm")});
 //    sources.push({name:"eta", src:read("test/resources/eta.scm")});
-    sources.push({name:"kcfa2", src:read("test/resources/kcfa2.scm")});    
-    sources.push({name:"blur", src:read("test/resources/blur.scm")});
+//    sources.push({name:"kcfa2", src:read("test/resources/kcfa2.scm")});    
+//    sources.push({name:"blur", src:read("test/resources/blur.scm")});
   }
   if (!x || x === 2)
   {

@@ -95,8 +95,11 @@ function amemoCesk(cc)
         i++;
       }
       
-      if (memoFlag && !impureApps.contains(application))
+      if (memoFlag)
       {
+        var ss = kont.ss;
+        var etg = kont.etg;
+        var ecg = kont.ecg;
         var appStates = appTable.get(fun, extendedBenv, kont.ss);
         var mValue = BOT;
         var mStore = BOT;
@@ -108,28 +111,12 @@ function amemoCesk(cc)
           {
             continue;
           }
-          var valueStates = Dsg.valuesOf(kont.etg, kont.ecg)(s);
-          valueStates.forEach(
-            function (vs)
-            {
-              if (vs.q.value)
-              {
-                mValue = mValue.join(vs.q.value);
-                mStore = mStore.join(vs.q.store);
-              }
-            });
-//          if (mValue !== BOT)
-//          {
-//            // break; // if "return first" strategy then break; else continue
-//          }
-        }
-        if (mStore !== BOT)
-        {
-          return kont.pop(function (frame) {return new KontState(frame, mValue, mStore)}, "MEMO");
-        }
-        else
-        {
-          appTable = appTable.put(fun, extendedBenv, kont.ss, kont.source);
+          var fwr = Dsg.fwReachable(etg, ecg)(s, function (r) {return r === currentState});
+          var bwr = Dsg.bwReachable(etg, ecg)(currentState, function (r) {return r === s});
+          if (fwr.equals(bwr))
+          {
+            print("memo opportunity", currentState, s);
+          }
         }
       }
       
@@ -145,7 +132,7 @@ function amemoCesk(cc)
 //        return handleReturnValue(atomicValue, fun, extendedStore, extendedStore, kont);
 //      }
       extendedBenv.application = application;
-      var frame = new ReturnKont(application); 
+      var frame = new ReturnKont([fun, extendedBenv, extendedStore]); 
       return kont.push(frame, new EvalState(exp, extendedBenv, extendedStore));
 //      return kont.unch(new EvalState(exp, extendedBenv, extendedStore));
     }
@@ -738,13 +725,7 @@ function amemoCesk(cc)
   KontState.prototype.next =
     function (kont)
     {
-//    try {
-      return applyKont(this.frame, this.value, gc(this, kont), kont)
-//    } catch (e)
-//    {
-//      print(e.stack);
-//      return kont.unch(new ErrorState(String(e), this.value, Benv.empty(), this.store));
-//    }
+      return this.frame.apply(this.value, gc(this, kont), kont);
     }
   KontState.prototype.addresses =
     function ()
@@ -889,12 +870,12 @@ function amemoCesk(cc)
   ReturnKont.prototype.toString =
     function ()
     {
-      return "ret-" + mark;
+      return "ret-";
     }
   ReturnKont.prototype.nice =
     function ()
     {
-      return "ret-" + mark;
+      return "ret-";
     }
   ReturnKont.prototype.addresses =
     function ()
@@ -910,14 +891,14 @@ function amemoCesk(cc)
   
   function evalLiteral(node, benv, store)
   {
-    var value = SetValue.from1(l.abst1(node));
+    var value = SetValue.from1(l.abst1(node.value()));
     return value;
   }
 
   function evalQuote(node, benv, store)
   {
     var quoted = node.cdr.car;
-    var value = SetValue.from1(l.abst1(quoted));
+    var value = SetValue.from1(l.abst1(quoted instanceof Lit ? quoted.value() : quoted));
     return value;
 //    if (quoted instanceof Number || quoted instanceof String || quoted instanceof Boolean)
 //    {
@@ -975,12 +956,6 @@ function amemoCesk(cc)
     var addr = benv.lookup(name); 
     var atomicValue =  evalAtomic(exp, benv, store);
     store = store.updateAval(addr, atomicValue);
-    if (memoFlag)
-    {
-      var apps = kont.ss.applicationContexts().map(function (returnKont) {return returnKont.node});
-      impureApps = impureApps.addAll(apps);
-      print(apps, "=> impure now", impureApps);
-    }
     return kont.pop(function (frame) {return new KontState(frame, L_UNDEFINED, store)});
   }
   
@@ -1003,11 +978,6 @@ function amemoCesk(cc)
       && !SchemeParser.isSyntacticKeyword(node.car.name)
   }
     
-  function applyKont(frame, value, store, kont)
-  {
-    return frame.apply(value, store, kont);
-  }
-  
   function trueFalse(conditionValue)
   {
     return SetValue.from(conditionValue._set._arr.map(
@@ -1110,7 +1080,7 @@ function amemoCesk(cc)
   
   function evalAtomic(node, benv, store)
   {
-    if (node instanceof Number || node instanceof Boolean || node instanceof String)
+    if (node instanceof Lit)
     {
       return evalLiteral(node, benv, store);        
     }
@@ -1139,7 +1109,7 @@ function amemoCesk(cc)
 
   function evalNode(node, benv, store, kont)
   {  
-    if (node instanceof Number || node instanceof Boolean || node instanceof String)
+    if (node instanceof Lit)
     {
       var value = evalLiteral(node, benv, store); 
       return kont.pop(function (frame) {return new KontState(frame, value, store)});        
@@ -1463,3 +1433,4 @@ AppTable.prototype.get =
     }
     return result;
   }
+

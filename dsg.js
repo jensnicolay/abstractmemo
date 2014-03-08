@@ -186,7 +186,7 @@ Dsg.fwReachable =
       return todo;
     }
 
-    return function (s)
+    return function (s, stop)
     {
       var todo = next(s, s);
       var visited = HashSet.empty();
@@ -199,8 +199,12 @@ Dsg.fwReachable =
         }
         visited = visited.add(re);
         var e = re[0];
-        var root = re[1];
         var target = e.target;
+        if (stop(target))
+        {
+          continue;
+        }
+        var root = re[1];
         todo = todo.concat(next(target, root));
       }
       return visited.values().map(function (re) {return re[0]});
@@ -248,7 +252,7 @@ Dsg.bwReachable =
       return todo;
     }
 
-    return function (s)
+    return function (s, stop)
     {
       var todo = next(s, false);
       var visited = HashSet.empty();
@@ -261,8 +265,12 @@ Dsg.bwReachable =
         }
         visited = visited.add(re);
         var e = re[0];
-        var onlyPop = re[1];
         var source = e.source;
+        if (stop(source))
+        {
+          continue;
+        }
+        var onlyPop = re[1];
         todo = todo.concat(next(source, onlyPop));
       }
       return visited.values().map(function (re) {return re[0]});
